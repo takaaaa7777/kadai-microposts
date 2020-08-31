@@ -16,7 +16,7 @@
             {{-- エラーメッセージ --}}
             @include('commons.error_messages')
             
-            @yeild('content')
+            @yield('content')
         </div>
         
         
