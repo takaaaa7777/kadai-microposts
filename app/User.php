@@ -60,13 +60,21 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(User::class, 'user_follow', 'follow_id', 'user_id')->withTimestamps();
     }     
+
+    /**
+     * このユーザがお気に入りしている投稿。（Micropostモデルとの関係を定義）
+     */
+    public function favorites() 
+    {
+        return $this->belongsToMany(Micropost::class, 'favorites', 'user_id', 'micropost_id');
+    }
      
     /**
      * このユーザに関係するモデルの件数をロードする。
      */
     public function loadRelationshipCounts()
     {
-        $this->loadCount(['microposts', 'followings', 'followers']);
+        $this->loadCount(['microposts', 'followings', 'followers', 'favorites']);
     }    
 
     /**
@@ -138,5 +146,57 @@ class User extends Authenticatable
         $userIds[] = $this->id;
         // それらのユーザが所有する投稿に絞り込む
         return Micropost::whereIn('user_id', $userIds);
-    }    
+    }
+    
+    /**
+     * $Idで指定された投稿をお気に入りする。
+     *
+     * @param  int  $id
+     * @return bool
+     */
+    public function favorite($id) {
+        // すでにお気に入り登録しているかの確認
+        $exist = $this->is_favariting($id);
+
+        if ($exist) {
+            // すでにお気に入り登録していれば何もしない
+            return false;
+        } else {
+            // 未お気に入り登録であればお気に入り登録する
+            $this->favorites()->attach($id);
+            return true;
+        }
+    }
+
+    /**
+     * $Idで指定された投稿をお気に入りする。
+     *
+     * @param  int  $id
+     * @return bool
+     */
+    public function unfavorite($id) {
+        // すでにお気に入り登録しているかの確認
+        $exist = $this->is_favariting($id);
+
+        if ($exist) {
+            // すでにお気に入り登録していればフォローを外す
+            $this->favorites()->detach($id);
+            return true;
+        } else {
+            // 未お気に入り登録であれば何もしない
+            return false;
+        }
+    }
+
+    /**
+     * 指定された $idの投稿をこのユーザがお気に入り中であるか調べる。お気に入り中ならtrueを返す。
+     *
+     * @param  int  $userId
+     * @return bool
+     */
+    public function is_favariting($id) {
+        // お気に入り中の投稿の中に $idのものが存在するか
+        return $this->favorites()->where('micropost_id', $id)->exists();
+    }
+     
 }    
